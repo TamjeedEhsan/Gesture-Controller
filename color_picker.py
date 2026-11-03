@@ -21,7 +21,7 @@ class ColorPicker:
 
     @property
     def thickness(self):
-        return 40 if self.colors[self.selected][0] == "eraser" else 6
+        return 60 if self.colors[self.selected][0] == "eraser" else 6
 
     def select(self, x, y):
         """If (x, y) is inside the palette, pick that color. Returns True if inside."""

@@ -41,6 +41,48 @@ mode = "draw"
 canvas = None
 prev = None
 
+# Undo / Redo history
+strokes = []
+redo_stack = []
+current_stroke = None
+
+# Gesture detection
+gesture_start = 0
+last_gesture = None
+gesture_cooldown = 0
+gesture_candidate = None
+
+
+def finish_stroke():
+    global current_stroke
+
+    if current_stroke:
+        strokes.append(current_stroke)
+        redo_stack.clear()
+        current_stroke = None
+
+
+def rebuild_canvas():
+    global canvas
+
+    canvas = np.zeros((H, W, 3), dtype=np.uint8)
+
+    for stroke in strokes:
+        for start, end, color, thickness in stroke:
+            cv2.line(canvas, start, end, color, thickness)
+
+
+def undo():
+    if strokes:
+        redo_stack.append(strokes.pop())
+        rebuild_canvas()
+
+
+def redo():
+    if redo_stack:
+        strokes.append(redo_stack.pop())
+        rebuild_canvas()
+
 save_msg = ""
 save_time = 0
 os.makedirs("drawings", exist_ok=True)
@@ -60,9 +102,44 @@ while True:
     if mode == "draw":
         if lm:
             fingers = tracker.fingers_up(lm)
+            now = time.time()
+
+            if fingers == [0, 0, 0, 0, 0]:
+                gesture = "undo"
+            elif fingers == [1, 1, 1, 1, 1]:
+                gesture = "redo"
+            else:
+                gesture = None
+
+            if gesture is not None:
+                if gesture != gesture_candidate:
+                    gesture_candidate = gesture
+                    gesture_start = now
+
+                elif now - gesture_start >= 0.7 and (
+                    last_gesture != gesture and now >= gesture_cooldown
+                ):
+                    finish_stroke()
+
+                    if gesture == "undo":
+                        undo()
+                    else:
+                        redo()
+
+                    prev = None
+                    last_gesture = gesture
+                    gesture_cooldown = now + 1.0
+
+            else:
+                gesture_candidate = None
+                last_gesture = None
+            
             x, y = lm[8][1], lm[8][2]
 
-            if fingers[1] == 1 and fingers[2] == 1:
+            if gesture in ("undo", "redo"):
+                finish_stroke()
+                prev = None
+            elif fingers[1] == 1 and fingers[2] == 1:
                 prev = None
                 picker.select(x, y)
                 cv2.circle(frame, (x, y), 12, (255, 255, 255), 2)
@@ -70,14 +147,22 @@ while True:
                 if y > picker.height:
                     if prev is None:
                         prev = (x, y)
+                    if current_stroke is None:
+                        current_stroke = []
                     cv2.line(canvas, prev, (x, y), picker.color, picker.thickness)
+
+                    current_stroke.append((prev, (x, y), picker.color, picker.thickness))
+
                     prev = (x, y)
                     cv2.circle(frame, (x, y), 10, (255, 255, 255), 2)
                 else:
+                    finish_stroke()
                     prev = None
             else:
+                finish_stroke()
                 prev = None
         else:
+            finish_stroke()
             prev = None
 
         mask = cv2.cvtColor(canvas, cv2.COLOR_BGR2GRAY) > 0
@@ -156,21 +241,40 @@ while True:
     
     cv2.imshow("Gesture Controller", frame)
     key = cv2.waitKey(1) & 0xFF
+    if key == ord('u'):
+        finish_stroke()
+        undo()
+        prev = None
+
+    elif key == ord('r'):
+        finish_stroke()
+        redo()
+        prev = None
+    
     if key == ord('q'):
         break
     elif key == ord('c'):
         canvas = np.zeros_like(frame)
+        strokes.clear()
+        redo_stack.clear()
+        current_stroke = None
+        prev = None
     elif key == ord('d'):
         mode, prev = "draw", None
     elif key == ord('k'):
+        finish_stroke()
         mode, prev = "keyboard", None
     elif key == ord('m'):
+        finish_stroke()
         mode, prev = "mouse", None
     elif key == ord('v'):
+        finish_stroke()
         mode, prev = "volume", None
     elif key == ord('z'):
+        finish_stroke()
         mode, prev = "zoom", None
     elif key == ord('p'):
+        finish_stroke()
         mode, prev = "media", None
     elif key == ord('i'):
         instructions.toggle()
