@@ -14,28 +14,21 @@ from instructions import InstructionsPanel
 
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
-# Set camera resolution to Full HD
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
-# Set FPS
 cap.set(cv2.CAP_PROP_FPS, 30)
 
-# Check actual camera resolution
 W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 print(f"Camera Resolution: {W}x{H}")
-# Create a resizable window
 cv2.namedWindow("Gesture Controller", cv2.WINDOW_NORMAL)
 
-# Set initial window size
 cv2.resizeWindow("Gesture Controller", 1280, 800)
 tracker = HandTracker()
-#W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 picker = ColorPicker(W)
 keyboard = VirtualKeyboard(W)
-#H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) 
 mouse = MouseController(W, H)
 volume = VolumeController()
 zoom = ZoomController()
@@ -131,7 +124,7 @@ while True:
             fingers = tracker.fingers_up(lm)
             palm = tracker.distance(lm, 0, 9)
             ratio = tracker.distance(lm, 4, 8) / palm
-            locked = fingers[4] == 1          # pinky up = lock the zoom
+            locked = fingers[4] == 1         
 
             zoom.update(ratio, locked)
 
@@ -149,7 +142,7 @@ while True:
             fingers = tracker.fingers_up(lm)
             media.update(fingers)
         else:
-            media.update([0, 0, 0, 0, 0])   # no hand: reset the hold timer
+            media.update([0, 0, 0, 0, 0])   
         media.draw(frame)
 
     cv2.putText(frame, f"Mode: {mode}", (10, frame.shape[0] - 15),
@@ -184,8 +177,8 @@ while True:
     elif key == ord('s'):
             mask = cv2.cvtColor(canvas, cv2.COLOR_BGR2GRAY) > 0
             if mask.any():
-                out = cv2.cvtColor(canvas, cv2.COLOR_BGR2BGRA)        # add an alpha channel
-                out[:, :, 3] = mask.astype(np.uint8) * 255            # drawn = opaque, empty = transparent
+                out = cv2.cvtColor(canvas, cv2.COLOR_BGR2BGRA)        
+                out[:, :, 3] = mask.astype(np.uint8) * 255           
                 name = datetime.now().strftime("drawings/drawing_%Y%m%d_%H%M%S.png")
                 cv2.imwrite(name, out)
                 save_msg, save_time = f"Saved {name}", time.time()

@@ -36,8 +36,18 @@ class ColorPicker:
             cv2.rectangle(frame, (x1, 0), (x2, self.height), color, cv2.FILLED)
             cv2.rectangle(frame, (x1, 0), (x2, self.height), (120, 120, 120), 1)
             if label == "eraser":
-                cv2.putText(frame, "ERASER", (x1 + 8, 42),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                text = "ERASER"
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                font_scale = 0.7
+                thickness = 2
 
+                text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
+
+                text_x = x1 + (self.box_w - text_size[0]) // 2
+                text_y = (self.height + text_size[1]) // 2
+
+                cv2.putText(frame, text, (text_x, text_y),
+                            font, font_scale, (255, 255, 255), thickness)
+                
         x1, x2 = self.selected * self.box_w, (self.selected + 1) * self.box_w
         cv2.rectangle(frame, (x1, 0), (x2, self.height), (255, 255, 255), 3)
