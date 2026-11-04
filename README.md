@@ -1,4 +1,4 @@
-# AI Gesture Controller
+# Gesture Controller
 
 Control your computer with hand gestures using just a webcam. Built with Python, OpenCV and MediaPipe as my first computer vision project.
 
@@ -29,6 +29,8 @@ Click the video window first, then use these hotkeys:
 | Key | Action |
 |---|---|
 | `D` | Draw mode |
+| `R` | Redo |
+| `U` | Undo |
 | `K` | Keyboard mode |
 | `M` | Mouse mode |
 | `V` | Volume mode |
